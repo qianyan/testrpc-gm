@@ -2,7 +2,7 @@ plugins {
     id 'idea'
     id 'java'
     id 'application'
-    id "com.google.protobuf" version "0.8.10"
+    id "com.google.protobuf" version "0.8.13"
 }
 
 repositories {
@@ -22,7 +22,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.9.2'
+        artifact = 'com.google.protobuf:protoc:3.0.0'
     }
     plugins {
         grpc {
