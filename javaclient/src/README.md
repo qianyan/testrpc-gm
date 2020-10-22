@@ -12,5 +12,5 @@ In order to run, Go to ``Java`` project root directory location (java/client) an
 shell command,
 
 ```
-java -jar build/libs/client.jar
+java -jar build/libs/javaclient.jar
 ```
