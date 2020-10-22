@@ -55,8 +55,12 @@ func (esss *emptyServiceServer) EmptyStream(stream echopb.EmptyService_EmptyStre
 	}
 }
 
+const (
+	port = ":50051"
+)
+
 func main() {
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	lis, err := net.Listen("tcp", port)
 	log.Println("Listener address: " + lis.Addr().String())
 	if err != nil {
 		log.Fatalf("Failed to create listener: %v", err)

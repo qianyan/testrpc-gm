@@ -48,6 +48,10 @@ func invokeEmptyCall(address string, dialOptions []grpc.DialOption) (*echopb.Emp
 	return empty, nil
 }
 
+const (
+	address = "localhost:50051"
+)
+
 func main() {
 	certPool := x509.NewCertPool()
 
@@ -61,7 +65,6 @@ func main() {
 	var dialOptions []grpc.DialOption
 	dialOptions = append(dialOptions, grpc.WithTransportCredentials(creds))
 
-	address := "127.0.0.1:57373"
 	_, err := invokeEmptyCall(address, dialOptions)
 
 	if err != nil {
