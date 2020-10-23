@@ -10,6 +10,8 @@ repositories {
 }
 
 def grpcVersion = '1.23.0'
+def bouncycastleVersion = '1.62'
+def protobufJava = '3.10.0'
 
 dependencies {
     compile fileTree(dir: 'lib', include: ['*.jar'])
@@ -20,8 +22,9 @@ dependencies {
     }
     compile "io.grpc:grpc-protobuf:${grpcVersion}"
     compile "io.grpc:grpc-stub:${grpcVersion}"
-    compile 'com.google.protobuf:protobuf-java:3.10.0'
-
+    compile "com.google.protobuf:protobuf-java:${protobufJava}"
+    compile "org.bouncycastle:bcprov-jdk15on:${bouncycastleVersion}"
+    compile "org.bouncycastle:bcpkix-jdk15on:${bouncycastleVersion}"
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
