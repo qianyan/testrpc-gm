@@ -2,29 +2,20 @@ package main
 
 import (
 	"context"
-	x509 "github.com/tjfoc/gmsm/sm2"
-	credentials "github.com/tjfoc/gmtls/gmcredentials"
-	"google.golang.org/grpc"
+	"io/ioutil"
 	"log"
-	echopb "testgm/client/echo"
 	"time"
+
+	"github.com/Hyperledger-TWGC/tjfoc-gm/gmtls"
+	"github.com/Hyperledger-TWGC/tjfoc-gm/gmtls/gmcredentials"
+	"github.com/Hyperledger-TWGC/tjfoc-gm/x509"
+	"google.golang.org/grpc"
+	echopb "testgm/client/echo"
 )
 
-var selfSignedCertPEM = `-----BEGIN CERTIFICATE-----
-MIICFDCCAbugAwIBAgIQTH+Jw6wgrqvFn8nN2Z4iNjAKBggqgRzPVQGDdTBcMQsw
-CQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy
-YW5jaXNjbzEPMA0GA1UEChMGc2VydmVyMQ8wDQYDVQQDEwZzZXJ2ZXIwHhcNMjAx
-MDEzMTQ1NDQ0WhcNMzAxMDExMTQ1NDQ0WjBcMQswCQYDVQQGEwJVUzETMBEGA1UE
-CBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZyYW5jaXNjbzEPMA0GA1UEChMG
-c2VydmVyMQ8wDQYDVQQDEwZzZXJ2ZXIwWTATBgcqhkjOPQIBBggqgRzPVQGCLQNC
-AAS2CgsRr8CP/ErjeBiJx9ppfbAfZbIQI9dHUm0AQsbVWlO6jNDgxTi47Wmf5gti
-lYeUqIBScI/BaWkQAn+1jIwho18wXTAOBgNVHQ8BAf8EBAMCAaYwDwYDVR0lBAgw
-BgYEVR0lADAPBgNVHRMBAf8EBTADAQH/MA0GA1UdDgQGBAQBAgMEMBoGA1UdEQQT
-MBGCCWxvY2FsaG9zdIcEfwAAATAKBggqgRzPVQGDdQNHADBEAiBqCgFi2yXg0a9y
-DvcAZzzLBLve48PAjZfYTi24YA6ovAIgfDXO5BIASJE/aY/0Mkdg6YabI7RJhEcX
-/4Mt25/Fsmc=
------END CERTIFICATE-----
-`
+var caCert = "testdata/ca.cert"
+var clientCert = "testdata/client.cert"
+var clientKey = "testdata/client.key"
 
 func invokeEmptyCall(address string, dialOptions []grpc.DialOption) (*echopb.Empty, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
@@ -53,19 +44,31 @@ const (
 )
 
 func main() {
-	certPool := x509.NewCertPool()
-
-	if !certPool.AppendCertsFromPEM([]byte(selfSignedCertPEM)) {
-		log.Fatal("Failed to append certificate to client credentials")
+	clientCerti, err := gmtls.LoadX509KeyPair(clientCert, clientKey)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	creds := credentials.NewClientTLSFromCert(certPool, "")
+	certPool := x509.NewCertPool()
+	cacert, err := ioutil.ReadFile(caCert)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	certPool.AppendCertsFromPEM(cacert)
+	creds := gmcredentials.NewTLS(&gmtls.Config{
+		GMSupport:    &gmtls.GMSupport{},
+		ServerName:   "test.example.com",
+		Certificates: []gmtls.Certificate{clientCerti},
+		RootCAs:      certPool,
+		ClientAuth:   gmtls.RequireAndVerifyClientCert,
+	})
 
 	// GRPC client options
 	var dialOptions []grpc.DialOption
 	dialOptions = append(dialOptions, grpc.WithTransportCredentials(creds))
 
-	_, err := invokeEmptyCall(address, dialOptions)
+	_, err = invokeEmptyCall(address, dialOptions)
 
 	if err != nil {
 		log.Fatalf("GRPC client failed to invoke the EmptyCall service on %s: %v",

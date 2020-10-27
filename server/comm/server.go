@@ -4,15 +4,16 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/tjfoc/gmsm/sm2"
-
-	tls "github.com/tjfoc/gmtls"
-	"google.golang.org/grpc"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/Hyperledger-TWGC/tjfoc-gm/x509"
+	tls "github.com/Hyperledger-TWGC/tjfoc-gm/gmtls"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"google.golang.org/grpc"
+
 )
 
 type GRPCServer struct {
@@ -32,7 +33,7 @@ type GRPCServer struct {
 	// Set of PEM-encoded X509 certificate authorities used to populate
 	// the tlsConfig.ClientCAs indexed by subject
 	//clientRootCAs map[string]*x509.Certificate
-	clientRootCAs map[string]*sm2.Certificate
+	clientRootCAs map[string]*x509.Certificate
 	// TLS configuration used by the grpc server
 	tls *TLSConfig
 }
@@ -45,7 +46,7 @@ func (gServer *GRPCServer) Start() error {
 	return gServer.server.Serve(gServer.listener)
 }
 
-func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig) (*GRPCServer, error) {
+func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig, certs []tls.Certificate) (*GRPCServer, error) {
 	grpcServer := &GRPCServer{
 		address:  listener.Addr().String(),
 		listener: listener,
@@ -80,10 +81,11 @@ func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig)
 			}
 			//base server certificate
 			grpcServer.tls = NewTLSConfig(&tls.Config{
+				GMSupport:              &tls.GMSupport{},
 				VerifyPeerCertificate:  secureConfig.VerifyCertificate,
 				GetCertificate:         getCert,
+				Certificates:           certs,
 				SessionTicketsDisabled: true,
-				CipherSuites:           secureConfig.CipherSuites,
 			})
 
 			if serverConfig.SecOpts.TimeShift > 0 {
@@ -99,8 +101,8 @@ func NewGRPCServerFromListener(listener net.Listener, serverConfig ServerConfig)
 				grpcServer.tls.config.ClientAuth = tls.RequireAndVerifyClientCert
 				//if we have client root CAs, create a certPool
 				if len(secureConfig.ClientRootCAs) > 0 {
-					grpcServer.clientRootCAs = make(map[string]*sm2.Certificate)
-					grpcServer.tls.config.ClientCAs = sm2.NewCertPool()
+					grpcServer.clientRootCAs = make(map[string]*x509.Certificate)
+					grpcServer.tls.config.ClientCAs = x509.NewCertPool()
 					for _, clientRootCA := range secureConfig.ClientRootCAs {
 						err = grpcServer.appendClientRootCA(clientRootCA)
 						if err != nil {
@@ -173,10 +175,10 @@ func (gServer *GRPCServer) appendClientRootCA(clientRoot []byte) error {
 
 //utility function to parse PEM-encoded certs
 //func pemToX509Certs(pemCerts []byte) ([]*x509.Certificate, []string, error) {
-func pemToX509Certs(pemCerts []byte) ([]*sm2.Certificate, []string, error) {
+func pemToX509Certs(pemCerts []byte) ([]*x509.Certificate, []string, error) {
 	//it's possible that multiple certs are encoded
 	//certs := []*x509.Certificate{}
-	certs := []*sm2.Certificate{}
+	certs := []*x509.Certificate{}
 	subjects := []string{}
 	for len(pemCerts) > 0 {
 		var block *pem.Block
@@ -191,7 +193,7 @@ func pemToX509Certs(pemCerts []byte) ([]*sm2.Certificate, []string, error) {
 		*/
 
 		//cert, err := x509.ParseCertificate(block.Bytes)
-		cert, err := sm2.ParseCertificate(block.Bytes)
+		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
 			return nil, subjects, err
 		} else {

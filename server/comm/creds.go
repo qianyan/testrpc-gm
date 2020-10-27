@@ -3,9 +3,9 @@ package comm
 import (
 	"context"
 	"errors"
-	"github.com/tjfoc/gmsm/sm2"
-	tls "github.com/tjfoc/gmtls"
-	"github.com/tjfoc/gmtls/gmcredentials"
+	tls "github.com/Hyperledger-TWGC/tjfoc-gm/gmtls"
+	"github.com/Hyperledger-TWGC/tjfoc-gm/gmtls/gmcredentials"
+	"github.com/Hyperledger-TWGC/tjfoc-gm/x509"
 	"google.golang.org/grpc/credentials"
 	"net"
 	"sync"
@@ -47,7 +47,7 @@ func (t *TLSConfig) Config() tls.Config {
 	return tls.Config{}
 }
 
-func (t *TLSConfig) AddClientRootCA(cert *sm2.Certificate) {
+func (t *TLSConfig) AddClientRootCA(cert *x509.Certificate) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -61,7 +61,7 @@ func NewServerTransportCredentials(
 	// clone the tls.Config which allows us to update it dynamically
 	serverConfig.config.NextProtos = alpnProtoStr
 	// override TLS version and ensure it is 1.2
-	serverConfig.config.MinVersion = tls.VersionTLS12
+	serverConfig.config.MinVersion = tls.VersionGMSSL
 	serverConfig.config.MaxVersion = tls.VersionTLS12
 	return &serverCreds{serverConfig: serverConfig}
 }
