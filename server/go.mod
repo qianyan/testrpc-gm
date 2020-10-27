@@ -3,10 +3,10 @@ module testgm/server
 go 1.14
 
 require (
-	github.com/golang/protobuf v1.4.0
-	github.com/tjfoc/gmsm v1.3.2
-	github.com/tjfoc/gmtls v1.2.1
-	google.golang.org/grpc v1.28.1
-	google.golang.org/protobuf v1.21.0
+	github.com/Hyperledger-TWGC/tjfoc-gm v0.0.0-20201027032413-de75d571dd85
+	github.com/golang/protobuf v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
+	github.com/tjfoc/gmsm v1.3.2 // indirect
+	google.golang.org/grpc v1.31.0
+	google.golang.org/protobuf v1.23.0
 )

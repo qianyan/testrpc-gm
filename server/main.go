@@ -3,35 +3,22 @@ package main
 import (
 	"context"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
-	"testgm/server/comm"
 	echopb "testgm/server/echo"
-	"time"
+
+	"github.com/Hyperledger-TWGC/tjfoc-gm/gmtls"
+	"github.com/Hyperledger-TWGC/tjfoc-gm/gmtls/gmcredentials"
+	"github.com/Hyperledger-TWGC/tjfoc-gm/x509"
+	"google.golang.org/grpc"
 )
 
-var selfSignedKeyPEM = `-----BEGIN EC PRIVATE KEY-----
-MIGTAgEAMBMGByqGSM49AgEGCCqBHM9VAYItBHkwdwIBAQQgqlBIAUaTj6uG+ETN
-WVSm5x75hLNSVUf5PnJbixQBHGCgCgYIKoEcz1UBgi2hRANCAAS2CgsRr8CP/Erj
-eBiJx9ppfbAfZbIQI9dHUm0AQsbVWlO6jNDgxTi47Wmf5gtilYeUqIBScI/BaWkQ
-An+1jIwh
------END EC PRIVATE KEY-----
-`
-var selfSignedCertPEM = `-----BEGIN CERTIFICATE-----
-MIICFDCCAbugAwIBAgIQTH+Jw6wgrqvFn8nN2Z4iNjAKBggqgRzPVQGDdTBcMQsw
-CQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy
-YW5jaXNjbzEPMA0GA1UEChMGc2VydmVyMQ8wDQYDVQQDEwZzZXJ2ZXIwHhcNMjAx
-MDEzMTQ1NDQ0WhcNMzAxMDExMTQ1NDQ0WjBcMQswCQYDVQQGEwJVUzETMBEGA1UE
-CBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZyYW5jaXNjbzEPMA0GA1UEChMG
-c2VydmVyMQ8wDQYDVQQDEwZzZXJ2ZXIwWTATBgcqhkjOPQIBBggqgRzPVQGCLQNC
-AAS2CgsRr8CP/ErjeBiJx9ppfbAfZbIQI9dHUm0AQsbVWlO6jNDgxTi47Wmf5gti
-lYeUqIBScI/BaWkQAn+1jIwho18wXTAOBgNVHQ8BAf8EBAMCAaYwDwYDVR0lBAgw
-BgYEVR0lADAPBgNVHRMBAf8EBTADAQH/MA0GA1UdDgQGBAQBAgMEMBoGA1UdEQQT
-MBGCCWxvY2FsaG9zdIcEfwAAATAKBggqgRzPVQGDdQNHADBEAiBqCgFi2yXg0a9y
-DvcAZzzLBLve48PAjZfYTi24YA6ovAIgfDXO5BIASJE/aY/0Mkdg6YabI7RJhEcX
-/4Mt25/Fsmc=
------END CERTIFICATE-----
-`
+var caCert = "testdata/ca.cert"
+var signCert = "testdata/sign.cert"
+var signKey = "testdata/sign.key"
+var encryptCert = "testdata/encrypt.cert"
+var encryptKey = "testdata/encrypt.key"
 
 type emptyServiceServer struct{}
 
@@ -60,27 +47,39 @@ const (
 )
 
 func main() {
+	signCert, err := gmtls.LoadGMX509KeyPair(signCert, signKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	encryptCert, err := gmtls.LoadGMX509KeyPair(encryptCert, encryptKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	certPool := x509.NewCertPool()
+
+	cacert, err := ioutil.ReadFile(caCert)
+	if err != nil {
+		log.Fatal(err)
+	}
+	certPool.AppendCertsFromPEM(cacert)
 	lis, err := net.Listen("tcp", port)
-	log.Println("Listener address: " + lis.Addr().String())
 	if err != nil {
-		log.Fatalf("Failed to create listener: %v", err)
+		log.Fatalf("fail to listen: %v", err)
 	}
+	creds := gmcredentials.NewTLS(&gmtls.Config{
+		GMSupport:    &gmtls.GMSupport{},
+		ClientAuth:   gmtls.RequireAndVerifyClientCert,
+		Certificates: []gmtls.Certificate{signCert, encryptCert},
+		ClientCAs:    certPool,
+	})
 
-	srv, err := comm.NewGRPCServerFromListener(lis, comm.ServerConfig{
-		ConnectionTimeout: 250 * time.Millisecond,
-		SecOpts: &comm.SecureOptions{
-			UseTLS:      true,
-			Certificate: []byte(selfSignedCertPEM),
-			Key:         []byte(selfSignedKeyPEM)}})
-	// check for error
-	if err != nil {
-		log.Fatalf("Failed to return new GRPC server: %v", err)
-	}
-
+	srv := grpc.NewServer(grpc.Creds(creds))
 	// register the GRPC test server
-	echopb.RegisterEmptyServiceServer(srv.Server(), &emptyServiceServer{})
+	echopb.RegisterEmptyServiceServer(srv, &emptyServiceServer{})
 
-	if err := srv.Start(); err != nil {
+	if err := srv.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
