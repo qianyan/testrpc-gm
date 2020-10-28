@@ -15,6 +15,9 @@ import (
 )
 
 var caCert = "testdata/ca.cert"
+
+// 签名证书和加密证书一定要由同一个 ca 签发
+// 证书的 KeyUsage 必须要对应上，分别是 Digital Signature 和 Key Encipherment
 var signCert = "testdata/sign.cert"
 var signKey = "testdata/sign.key"
 var encryptCert = "testdata/encrypt.cert"
@@ -69,9 +72,9 @@ func main() {
 		log.Fatalf("fail to listen: %v", err)
 	}
 	creds := gmcredentials.NewTLS(&gmtls.Config{
-		GMSupport:    &gmtls.GMSupport{},
+		GMSupport:    &gmtls.GMSupport{}, //必须的，国密支持开关
 		ClientAuth:   gmtls.RequireAndVerifyClientCert,
-		Certificates: []gmtls.Certificate{signCert, encryptCert},
+		Certificates: []gmtls.Certificate{signCert, encryptCert}, // 证书数组构造时候，签名证书一定要在加密证书前面
 		ClientCAs:    certPool,
 	})
 
