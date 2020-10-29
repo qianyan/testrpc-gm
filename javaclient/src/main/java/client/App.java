@@ -67,7 +67,7 @@ public class App {
                     .build();
 
             NettyChannelBuilder channelBuilder = NettyChannelBuilder
-                    .forAddress("localhost", 50051)
+                    .forAddress("localhost", 50052)
                     .sslContext(sslContext)
                     .negotiationType(ntype);
 

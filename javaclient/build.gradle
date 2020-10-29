@@ -14,7 +14,12 @@ def bouncycastleVersion = '1.62'
 def protobufJava = '3.10.0'
 
 dependencies {
-    compile fileTree(dir: 'lib', include: ['*.jar'])
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+//    compile files('libs/netty-handler-4.1.26.Final-SNAPSHOT.jar')
+//    compile files('libs/netty-codec-http2-4.1.26.Final-SNAPSHOT.jar')
+//    compile files('libs/netty-tcnative-openssl-static-2.0.9.Final-SNAPSHOT.jar')
+//    compile files('libs/netty-tcnative-openssl-static-2.0.9.Final-SNAPSHOT-osx-x86_64.jar')
+
 
     compile("io.grpc:grpc-netty:${grpcVersion}") {
         exclude(group: 'io.netty', module: 'netty-codec-http2')
@@ -26,7 +31,13 @@ dependencies {
     compile "org.bouncycastle:bcprov-jdk15on:${bouncycastleVersion}"
     compile "org.bouncycastle:bcpkix-jdk15on:${bouncycastleVersion}"
 
-    // Use JUnit test framework
+    compile group: 'commons-logging', name: 'commons-logging', version: '1.2'
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+    compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'
+    compile group: 'log4j', name: 'log4j', version: '1.2.17'
+    compile group: 'log4j', name: 'apache-log4j-extras', version: '1.2.17'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.6.2'
+
     testImplementation 'junit:junit:4.12'
 }
 
