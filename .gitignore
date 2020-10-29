@@ -3,3 +3,4 @@ bin/
 .idea
 javaclient/build/
 javaclient/out/
+output.log
