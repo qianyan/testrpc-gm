@@ -46,6 +46,13 @@ func main() {
 		log.Fatalf("Failed to read body: %v", err)
 	}
 
+	defer func() {
+		err := response.Body.Close()
+		if err != nil {
+			log.Fatalf("Failed to close the response body: %s", err.Error())
+		}
+	}()
+
 	if string(body) != "hello" {
 		log.Fatalf("Got hello failed.")
 	} else {
