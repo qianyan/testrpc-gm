@@ -44,22 +44,22 @@ const (
 )
 
 func main() {
-	clientCerti, err := gmtls.LoadX509KeyPair(clientCert, clientKey)
+	clientCert, err := gmtls.LoadX509KeyPair(clientCert, clientKey)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	certPool := x509.NewCertPool()
-	cacert, err := ioutil.ReadFile(caCert)
+	caCert, err := ioutil.ReadFile(caCert)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	certPool.AppendCertsFromPEM(cacert)
+	certPool.AppendCertsFromPEM(caCert)
 	creds := gmcredentials.NewTLS(&gmtls.Config{
 		GMSupport:    &gmtls.GMSupport{},
 		ServerName:   "test.example.com",
-		Certificates: []gmtls.Certificate{clientCerti},
+		Certificates: []gmtls.Certificate{clientCert},
 		RootCAs:      certPool,
 		ClientAuth:   gmtls.RequireAndVerifyClientCert,
 	})
